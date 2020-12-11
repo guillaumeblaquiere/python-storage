@@ -32,10 +32,13 @@ class Connection(_http.JSONConnection):
     """
 
     DEFAULT_API_ENDPOINT = "https://storage.googleapis.com"
+    DEFAULT_API_MTLS_ENDPOINT = "https://storage.mtls.googleapis.com"
 
-    def __init__(self, client, client_info=None, api_endpoint=DEFAULT_API_ENDPOINT):
+    def __init__(self, client, client_info=None, api_endpoint=None):
         super(Connection, self).__init__(client, client_info)
-        self.API_BASE_URL = api_endpoint
+        self.API_BASE_URL = api_endpoint or self.DEFAULT_API_ENDPOINT
+        self.API_BASE_MTLS_URL = self.DEFAULT_API_MTLS_ENDPOINT
+        self.ALLOW_AUTO_SWITCH_TO_MTLS_URL = api_endpoint is None
         self._client_info.client_library_version = __version__
 
         # TODO: When metrics all use gccl, this should be removed #9552
