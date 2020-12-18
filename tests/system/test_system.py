@@ -2015,7 +2015,7 @@ class TestKMSIntegration(TestStorageFiles):
     @classmethod
     def setUpClass(cls):
         if Config.TESTING_MTLS:
-            cls.skipTest(self=cls, reason="Skip pubsub tests for mTLS testing")
+            cls.skipTest(self=cls, reason="Skip kms tests for mTLS testing")
         super(TestKMSIntegration, cls).setUpClass()
         _empty_bucket(cls.bucket)
 
@@ -2025,16 +2025,16 @@ class TestKMSIntegration(TestStorageFiles):
         project = Config.CLIENT.project
         location = self.bucket.location.lower()
         keyring_name = self.KEYRING_NAME
-        purpose = kms.enums.CryptoKey.CryptoKeyPurpose.ENCRYPT_DECRYPT
+        purpose = kms.CryptoKey.CryptoKeyPurpose.ENCRYPT_DECRYPT
 
         # If the keyring doesn't exist create it.
         keyring_path = client.key_ring_path(project, location, keyring_name)
 
         try:
-            client.get_key_ring(keyring_path)
+            client.get_key_ring(name=keyring_path)
         except exceptions.NotFound:
-            parent = client.location_path(project, location)
-            client.create_key_ring(parent, keyring_name, {})
+            parent = f"projects/{project}/locations/{location}"
+            client.create_key_ring(parent=parent, key_ring_id=keyring_name, key_ring={})
 
             # Mark this service account as an owner of the new keyring
             service_account = Config.CLIENT.get_service_account_email()
@@ -2046,7 +2046,7 @@ class TestKMSIntegration(TestStorageFiles):
                     }
                 ]
             }
-            client.set_iam_policy(keyring_path, policy)
+            client.set_iam_policy(resource=keyring_path, policy=policy)
 
         # Populate the keyring with the keys we use in the tests
         key_names = [
@@ -2060,10 +2060,10 @@ class TestKMSIntegration(TestStorageFiles):
         for key_name in key_names:
             key_path = client.crypto_key_path(project, location, keyring_name, key_name)
             try:
-                client.get_crypto_key(key_path)
+                client.get_crypto_key(name=key_path)
             except exceptions.NotFound:
                 key = {"purpose": purpose}
-                client.create_crypto_key(keyring_path, key_name, key)
+                client.create_crypto_key(parent=keyring_path, crypto_key_id=key_name, crypto_key=key)
 
     def test_blob_w_explicit_kms_key_name(self):
         BLOB_NAME = "explicit-kms-key-name"
